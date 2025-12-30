@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile - FHDIO</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#1a73e8; color:#fff; }
+  header h1 { margin:0; cursor:pointer; }
+  main { padding:1rem; }
+  .profile { text-align:center; margin-bottom:1.5rem; }
+  .profile img { width:120px; height:120px; border-radius:50%; object-fit:cover; }
+  .profile input[type="file"] { margin-top:0.5rem; }
+  button { margin-top:1rem; padding:0.5rem 1rem; border:none; border-radius:5px; background:#1a73e8; color:#fff; cursor:pointer; }
+  .video-list { margin-top:2rem; }
+  .video-item { background:#fff; padding:0.5rem; margin-bottom:1rem; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 onclick="window.location.href='home.html'">FHDIO</h1>
+  <button onclick="window.location.href='settings.html'">Settings ⚙️</button>
+</header>
+
+<main>
+  <div class="profile">
+    <img id="avatar-img" src="" alt="Avatar">
+    <div>
+      <input type="file" id="avatar-input" accept="image/*">
+      <button id="upload-avatar-btn">Upload Avatar</button>
+    </div>
+    <h2 id="user-email"></h2>
+  </div>
+
+  <h3>Video Saya</h3>
+  <div class="video-list" id="video-list"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+const avatarImg = document.getElementById('avatar-img')
+const avatarInput = document.getElementById('avatar-input')
+const uploadBtn = document.getElementById('upload-avatar-btn')
+const userEmail = document.getElementById('user-email')
+const videoList = document.getElementById('video-list')
+
+let user
+
+async function loadProfile() {
+  const { data } = await supabase.auth.getUser()
+  user = data.user
+  if(!user) { alert('Login dulu'); window.location.href='login.html'; return }
+
+  userEmail.textContent = user.email
+
+  // Load avatar
+  const { data: avatarData } = supabase.storage.from('avatars').getPublicUrl(`${user.id}/avatar.png`)
+  avatarImg.src = avatarData.publicUrl || 'https://via.placeholder.com/120'
+
+  loadVideos()
+}
+
+// Load user's videos
+async function loadVideos() {
+  const { data, error } = await supabase.from('videos').select('*').eq('user_id', user.id).order('created_at', { ascending:false })
+  if(error) { console.log(error.message); return }
+
+  videoList.innerHTML = ''
+  data.forEach(v => {
+    const div = document.createElement('div')
+    div.className = 'video-item'
+    div.textContent = v.title
+    div.addEventListener('click', ()=>window.location.href=`watch.html?id=${v.id}`)
+    videoList.appendChild(div)
+  })
+}
+
+// Upload avatar
+uploadBtn.addEventListener('click', async ()=>{
+  const file = avatarInput.files[0]
+  if(!file) { alert('Pilih file terlebih dahulu'); return }
+
+  const filePath = `${user.id}/avatar.png`
+  const { error } = await supabase.storage.from('avatars').upload(filePath, file, { upsert:true })
+  if(error) { alert(error.message); return }
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+  avatarImg.src = data.publicUrl
+  alert('Avatar berhasil diupload')
+})
+
+loadProfile()
+</script>
+</body>
+</html>
