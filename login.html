@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - FHDIO</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+  }
+  input {
+    width: 100%;
+    padding: 0.7rem;
+    margin-top: 0.3rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+  button {
+    width: 100%;
+    padding: 0.7rem;
+    margin-top: 1.5rem;
+    border: none;
+    border-radius: 5px;
+    background: #1a73e8;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #155ab6;
+  }
+  p {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  a {
+    color: #1a73e8;
+    text-decoration: none;
+  }
+  #message {
+    text-align: center;
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Login FHDIO</h1>
+  <form id="login-form">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required placeholder="email@example.com">
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required placeholder="Password">
+
+    <button type="submit">Login</button>
+  </form>
+  <p id="message"></p>
+  <p>Belum punya akun? <a href="register.html">Daftar di sini</a></p>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  const form = document.getElementById('login-form')
+  const message = document.getElementById('message')
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const email = form.email.value
+    const password = form.password.value
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) {
+      message.textContent = error.message
+      message.style.color = 'red'
+    } else {
+      message.textContent = 'Login sukses! Mengarahkan...'
+      message.style.color = 'green'
+      setTimeout(() => window.location.href = 'home.html', 1000)
+    }
+  })
+</script>
+</body>
+</html>
