@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beranda - FHDIO</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #1a73e8;
+    color: #fff;
+  }
+  header h1 { margin: 0; font-size: 1.5rem; }
+  header button {
+    padding: 0.5rem 1rem;
+    background: #fff;
+    color: #1a73e8;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  main {
+    padding: 1rem;
+  }
+  .video-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .video-item {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .video-item img {
+    width: 100%;
+    border-radius: 10px;
+  }
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    background: #fff;
+    border-top: 1px solid #ccc;
+    padding: 0.5rem 0;
+  }
+  .bottom-nav button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>FHDIO</h1>
+  <button onclick="window.location.href='search.html'">Research 🔍</button>
+</header>
+
+<main>
+  <div class="video-list" id="video-list">
+    <!-- Video dari Supabase akan muncul di sini -->
+  </div>
+</main>
+
+<div class="bottom-nav">
+  <button onclick="window.location.href='upload.html'">➕ Upload</button>
+  <button onclick="window.location.href='profile.html'">👤 Profile</button>
+  <button onclick="window.location.href='analytics.html'">📊 Analytics</button>
+  <button onclick="window.location.href='settings.html'">⚙️ Settings</button>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+const videoList = document.getElementById('video-list')
+
+// Fetch video dari Supabase
+async function loadVideos() {
+  const { data, error } = await supabase
+    .from('videos')
+    .select('*')
+    .order('views', { ascending: false })
+
+  if (error) {
+    videoList.innerHTML = `<p style="color:red">${error.message}</p>`
+    return
+  }
+
+  videoList.innerHTML = ''
+  data.forEach(video => {
+    const div = document.createElement('div')
+    div.className = 'video-item'
+    div.innerHTML = `
+      <img src="${video.video_url}" alt="${video.title}">
+      <h3>${video.title}</h3>
+      <p>${video.description}</p>
+    `
+    div.addEventListener('click', () => {
+      window.location.href = `watch.html?id=${video.id}`
+    })
+    videoList.appendChild(div)
+  })
+}
+
+loadVideos()
+</script>
+</body>
+</html>
