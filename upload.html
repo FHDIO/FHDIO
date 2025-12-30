@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload Video - FHDIO</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f4f4; display:flex; justify-content:center; align-items:center; height:100vh; }
+  .container { background:#fff; padding:2rem; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); width:100%; max-width:400px; }
+  h1 { text-align:center; margin-bottom:1.5rem; }
+  label { display:block; margin-top:1rem; }
+  input, textarea { width:100%; padding:0.7rem; margin-top:0.3rem; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
+  button { width:100%; padding:0.7rem; margin-top:1.5rem; border:none; border-radius:5px; background:#1a73e8; color:#fff; font-weight:bold; cursor:pointer; }
+  button:hover { background:#155ab6; }
+  #message { text-align:center; margin-top:1rem; font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Upload Video</h1>
+  <form id="upload-form">
+    <label for="title">Judul</label>
+    <input type="text" id="title" name="title" required placeholder="Judul video">
+
+    <label for="description">Deskripsi</label>
+    <textarea id="description" name="description" required placeholder="Deskripsi video"></textarea>
+
+    <label for="file">Pilih Video</label>
+    <input type="file" id="file" name="file" accept="video/*" required>
+
+    <button type="submit">Upload</button>
+  </form>
+  <p id="message"></p>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+const form = document.getElementById('upload-form')
+const message = document.getElementById('message')
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const user = (await supabase.auth.getUser()).data.user
+  if(!user) { message.textContent = 'Login dulu!'; message.style.color='red'; return }
+
+  const title = form.title.value
+  const description = form.description.value
+  const file = form.file.files[0]
+  if(!file) { message.textContent='Pilih video!'; message.style.color='red'; return }
+
+  const filePath = `${user.id}/${Date.now()}-${file.name}`
+
+  message.textContent = 'Uploading...'; message.style.color='black'
+
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('videos')
+    .upload(filePath, file)
+
+  if(uploadError) { message.textContent = uploadError.message; message.style.color='red'; return }
+
+  const { publicUrl } = supabase.storage.from('videos').getPublicUrl(filePath)
+
+  const { error: dbError } = await supabase.from('videos').insert({
+    user_id: user.id,
+    title,
+    description,
+    video_url: publicUrl,
+    views: 0
+  })
+
+  if(dbError) { message.textContent=dbError.message; message.style.color='red'; return }
+
+  message.textContent='Upload sukses! Mengarahkan ke beranda...'; message.style.color='green'
+  setTimeout(()=>window.location.href='home.html',1500)
+})
+</script>
+</body>
+</html>
