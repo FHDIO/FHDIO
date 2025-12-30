@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics - FHDIO</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#1a73e8; color:#fff; }
+  header h1 { margin:0; cursor:pointer; }
+  main { padding:1rem; }
+  .video-item { background:#fff; padding:1rem; margin-bottom:1rem; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+  .video-item h3 { margin:0 0 0.5rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 onclick="window.location.href='home.html'">FHDIO</h1>
+  <button onclick="window.location.href='profile.html'">Profile 👤</button>
+</header>
+
+<main>
+  <h2>Analytics Video Saya</h2>
+  <div id="video-list"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+const videoList = document.getElementById('video-list')
+
+let user
+
+async function loadAnalytics() {
+  const { data: userData } = await supabase.auth.getUser()
+  user = userData.user
+  if(!user) { alert('Login dulu'); window.location.href='login.html'; return }
+
+  const { data, error } = await supabase.from('videos').select('*').eq('user_id', user.id).order('created_at', { ascending:false })
+  if(error) { videoList.innerHTML=`<p style="color:red">${error.message}</p>`; return }
+
+  videoList.innerHTML = ''
+  data.forEach(v => {
+    const div = document.createElement('div')
+    div.className = 'video-item'
+    div.innerHTML = `
+      <h3>${v.title}</h3>
+      <p>Views: ${v.views}</p>
+      <p>${v.description}</p>
+    `
+    videoList.appendChild(div)
+  })
+}
+
+loadAnalytics()
+</script>
+</body>
+</html>
