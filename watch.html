@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch Video - FHDIO</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#f4f4f4; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#1a73e8; color:#fff; }
+  header h1 { margin:0; font-size:1.5rem; cursor:pointer; }
+  main { padding:1rem; }
+  video { width:100%; border-radius:10px; margin-bottom:1rem; }
+  .comments { margin-top:1rem; }
+  .comments input { width:80%; padding:0.5rem; border-radius:5px; border:1px solid #ccc; }
+  .comments button { padding:0.5rem 1rem; border:none; border-radius:5px; background:#1a73e8; color:#fff; cursor:pointer; }
+  .comment-item { background:#fff; padding:0.5rem; margin-top:0.5rem; border-radius:5px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 onclick="window.location.href='home.html'">FHDIO</h1>
+  <button onclick="window.location.href='search.html'">Research 🔍</button>
+</header>
+
+<main>
+  <h2 id="video-title"></h2>
+  <video id="video-player" controls></video>
+  <p id="video-description"></p>
+  <p>Views: <span id="video-views">0</span></p>
+
+  <div class="comments">
+    <h3>Comments</h3>
+    <div id="comment-list"></div>
+    <input type="text" id="comment-input" placeholder="Tulis komentar...">
+    <button id="comment-btn">Kirim</button>
+  </div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabaseUrl = 'https://elmjomycxgrwpsidxutk.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbWpvbXljeGdyd3BzaWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwOTY5NjEsImV4cCI6MjA4MjY3Mjk2MX0.gc-VEhuYdB73EG7H1U5UvVmB1zu9n-1EwPYfVw1_l3U'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+const params = new URLSearchParams(window.location.search)
+const videoId = params.get('id')
+
+const titleEl = document.getElementById('video-title')
+const descEl = document.getElementById('video-description')
+const videoEl = document.getElementById('video-player')
+const viewsEl = document.getElementById('video-views')
+const commentList = document.getElementById('comment-list')
+const commentInput = document.getElementById('comment-input')
+const commentBtn = document.getElementById('comment-btn')
+
+// Load video
+async function loadVideo() {
+  const { data, error } = await supabase.from('videos').select('*').eq('id', videoId).single()
+  if(error) { alert(error.message); return }
+
+  titleEl.textContent = data.title
+  descEl.textContent = data.description
+  videoEl.src = data.video_url
+  viewsEl.textContent = data.views
+
+  // Tambah view
+  await supabase.from('videos').update({ views: data.views + 1 }).eq('id', videoId)
+  viewsEl.textContent = data.views + 1
+}
+
+// Load comments
+async function loadComments() {
+  const { data, error } = await supabase.from('comments').select('*').eq('video_id', videoId).order('created_at', { ascending:true })
+  if(error) { console.log(error.message); return }
+  commentList.innerHTML = ''
+  data.forEach(c => {
+    const div = document.createElement('div')
+    div.className = 'comment-item'
+    div.textContent = c.content
+    commentList.appendChild(div)
+  })
+}
+
+// Add comment
+commentBtn.addEventListener('click', async () => {
+  const comment = commentInput.value.trim()
+  if(!comment) return
+  const user = (await supabase.auth.getUser()).data.user
+  if(!user) { alert('Login dulu'); return }
+
+  await supabase.from('comments').insert({
+    user_id: user.id,
+    video_id: videoId,
+    content: comment
+  })
+  commentInput.value = ''
+  loadComments()
+})
+
+loadVideo()
+loadComments()
+</script>
+</body>
+</html>
